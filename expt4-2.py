@@ -1,0 +1,97 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+i= 0
+num= 10 #how many for 1 f
+xs= np.array([10+10*i for i in range(i,188)])
+data=np.loadtxt("C:/Users/user/OneDrive/Desktop/data-week7/4-2-1.txt")
+# data=data[:-5]
+# data1=np.loadtxt("C:/Users/user/OneDrive/Desktop/3-1-2.txt")
+# data= data1-data
+print(len(data))
+data= np.array(data[i*num:])/2
+data= np.reshape(data, (188-i,10))
+ys= np.array([np.mean(i) for i in data])
+yerror= 0.001
+# yerror= np.array([np.std(i) for i in data])
+# print(yerror)
+#initial value
+vin=5
+R= 503.5
+ #inner resistance
+
+C=4.33e-6
+
+#inner
+#oscillosope
+r= 1e6
+c= 16e-12
+
+
+lcable= 0.001e-3
+Ccable= 4.73e-9
+# C= C+Ccable
+# C= C*Ccable/(C+Ccable)
+# print(C)
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from iminuit import Minuit
+from iminuit.cost import LeastSquares
+
+
+# fig, ax= plt.subplots()
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+
+def f(x, vin, R, C, d):
+    R+=50+0.06*2+5.26
+    R= R*1e6/(R+1e6)
+    return vin* np.sqrt(1/(1+(2*np.pi*x*(R)*(C+Ccable+16e-12))**2)) #x is the input frequency
+'''
+def f(f, vin, R,  C, d):
+    L=lcable*2
+    xl= 2*np.pi*f*L*1j
+    xc= 1/(2*np.pi*f*c)*(-1j)
+    xC= 1/(2*np.pi*f*C)*(-1j)
+    xCable=1/(2*np.pi*f*Ccable)*(-1j)
+    xrc= xc*r/(xc+r)
+    xrlc= xl+xrc
+    xrlcc= xrlc*xC/(xrlc+xC)
+    xrlcclc= xrlcc*xCable/(xrlcc+xCable)
+    xrlc= xrlcclc+R
+    # xrlcc= xrlc*xCable/(xrlc+xCable)
+    z= xrlc+50+0.06*2
+    rr= R+50+0.06*2
+    # z=np.sqrt(rr**2+xl**2+xc**2)
+    return vin*(abs(z-rr)/abs(z))
+'''
+# u= np.linspace(0, 1000, 1000)
+# plt.scatter(u, f(u, R, C))
+least_square= LeastSquares(xs, ys, yerror, model= f)
+m=Minuit(least_square,R= R, C= C, d=0, vin=vin)
+# # plt.errorbar(xs, ys, yerr= stdev(ys)/ , fmt='')
+m.migrad() 
+m.hesse()
+plt.errorbar(xs, ys, yerr= yerror, fmt=".", label="data", color='navy',alpha= 0.5, ms=6)
+# print((f(xs, *m.values)))
+
+# plt.plot(xs, f(xs, *m.values), label="fit", color= 'green', lw= 2)
+# print(m.values)
+plt.plot(xs,f(xs, vin=m.values['vin'], R=R, C=C, d=0),lw= 2,color= 'orange', label= 'Theory')
+# plt.plot(xs, [f(xs, *m.values) for i in range(4)], label= 'fit')
+fit_info = [
+    f"$\\chi^2$ / $n_\\mathrm{{dof}}$ = {m.fval:.1f} / {len(xs) - m.nfit}",
+]
+for p, v, e in zip(m.parameters, m.values, m.errors):
+    fit_info.append(f"{p} = ${v:.3e} \\pm {e:.3e}$")
+
+plt.grid()
+plt.tight_layout()
+plt.draw()
+# plt.xlabel('t (s)', fontsize= 15)
+# plt.ylabel('V (volt)', fontsize= 15)
+plt.legend(title="\n".join(fit_info))
+plt.show()
